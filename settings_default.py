@@ -114,6 +114,7 @@ INSTALLED_APPS = [
     'raven.contrib.django',
     'south',
     'djangosecure',
+    'drugs',
 ]
 
 # django-secure
