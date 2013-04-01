@@ -1,34 +1,19 @@
 ===================================
-Django project-base
+SIDER 2 import tool
 ===================================
-Base project for the Django project
------------------------------------
 
-Dependencies
+Setup
 ------------
-Dependencies will be automatically installed in a virtualenv environment in
-the `env` directory upon running `prepare.sh`. As of now, the following
-dependencies will be installed, from PyPI:
 
-*   django-extensions (http://github.com/django-extensions/django-extensions/)
-*   django-debug-toolbar (http://github.com/robhudson/django-debug-toolbar/)
-*   raven (http://raven.readthedocs.org/en/latest/)
+# Setup an virtual environment with the required package in the local
+# directory.
+$ virtualenv --distribute env
+$ . env/bin/activate
+$ pip install -r requirements.txt
 
-Usage
------
+# Follow the steps...
+$ ./manage.py syncdb
 
-Starting a project based on this project
-========================================
-	git init <my_project>
-	
-	cd <my_project>
+# And... start the importing action
+$ DJANGO_SETTINGS_MODULE=settings ./import_sideeffects.py
 
-	git pull git://github.com/dokterbob/django-project-base.git
-	
-	./prepare.sh
-	
-	./runserver.sh
-
-Updating your project from the base
-===================================
-	git pull git://github.com/dokterbob/django-project-base.git
