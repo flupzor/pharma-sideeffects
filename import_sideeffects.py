@@ -169,15 +169,16 @@ def meddra_freq_parsed_line(line):
     side_effect_freq.save()
 
 def label_mapping_line(line):
-        label_line = LabelMappingLine()
-        label_line.parse(line)
+    label_line = LabelMappingLine()
+    label_line.parse(line)
 
-        drug = Drug()
+    drug = Drug()
 
-        drug.generic_name = label_line.generic_name
-        drug.brand_name = label_line.brand_name
+    drug.generic_name = label_line.generic_name
+    drug.brand_name = label_line.brand_name
 
-        drug.save()
+    drug.save()
+
 
 if __name__ == '__main__':
 
