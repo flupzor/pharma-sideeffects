@@ -45,6 +45,10 @@ class ParseLine(object):
 
         return s
 
+class LabelMappingLine(ParseLine):
+    column_names = [ 'generic_name', 'brand_name', 'marker', 'compound_id1',
+        'compound_id2', 'url', 'label_identifier']
+
 class MeddraFreqParsedLine(ParseLine):
     column_names = ['flat_compound_id', 'stereo_compound_id', 'source_label',
         'umls_concept_id', 'concept_name', 'placebo', 'frequency_description',
@@ -159,27 +163,22 @@ def meddra_freq_parsed_line(line):
 
     side_effect_freq.save()
 
+def label_mapping_line(line):
+        label_line = LabelMappingLine()
+        label_line.parse(line)
+
+        drug = Drug()
+
+        drug.generic_name = label_line.generic_name
+        drug.brand_name = label_line.brand_name
+
+        drug.save()
+
 if __name__ == '__main__':
-    label_mapping = open('sideeffects_files/label_mapping.tsv', 'r')
 
 # XXX: For now, we aren't using the label mappings
-
-#    for line in label_mapping.readlines():
-#
-#        # Skip empty lines
-#        if (len(line) == 0 or line.isspace()):
-#            continue
-#
-#        generic_name, brand_name, marker, compound_id1, compound_id2, url, \
-#            label_identifier = line.split('\t')
-#
-#        drug = Drug()
-#
-#        drug.generic_name = generic_name
-#        drug.brand_name = brand_name
-#
-#        drug.save()
-#
+#    label_mapping = open('sideeffects_files/label_mapping.tsv', 'r')
+#    for_every_line(label_mapping, label_mapping_line) 
 
     meddra_adverse_effects = open('sideeffects_files/meddra_adverse_effects.tsv', 'r')
     for_every_line(meddra_adverse_effects, adverse_effect_line) 
