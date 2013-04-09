@@ -7,6 +7,8 @@ class SideEffect(models.Model):
 class Drug(models.Model):
     name = models.CharField(max_length=64, verbose_name='name', db_index=True)
 
+    atc_code = models.CharField(max_length=64, verbose_name='ATC code')
+
     flat_compound_id = models.CharField(max_length=64, verbose_name='name', db_index=True)
     stereo_compound_id = models.CharField(max_length=64, verbose_name='name', db_index=True)
 
