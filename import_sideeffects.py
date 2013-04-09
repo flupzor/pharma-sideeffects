@@ -61,7 +61,11 @@ class MeddraAdverseEffectLine(ParseLine):
         'drug_name', 'side_effect_name', 'MedDRA_concept_type', \
         'UMLS_concept_id_for_MedDRA_term', 'MedDRA_side_effect_name' ]
 
-def for_every_line(f, cb):
+def for_every_line(filename, cb):
+
+    sys.stdout.write("Opening file: %s\n" %(filename, ))
+
+    f = open(filename, 'r')
 
     # Calculate the number of lines. Which will be used to show the progress.
     line_count = 0
@@ -92,8 +96,9 @@ def for_every_line(f, cb):
         # Trim newlines and such
         line = line.rstrip();
 
-        print "Processing line: %d of %d %f%%" % (line_number, line_count,
-            float(line_number) / float(line_count) * 100.0)
+        sys.stdout.write("Processing line: %d of %d %f%%\r" % (line_number, line_count,
+            float(line_number) / float(line_count) * 100.0))
+        sys.stdout.flush()
 
         cb(line)
 
@@ -177,11 +182,6 @@ def label_mapping_line(line):
 if __name__ == '__main__':
 
 # XXX: For now, we aren't using the label mappings
-#    label_mapping = open('sideeffects_files/label_mapping.tsv', 'r')
-#    for_every_line(label_mapping, label_mapping_line) 
-
-    meddra_adverse_effects = open('sideeffects_files/meddra_adverse_effects.tsv', 'r')
-    for_every_line(meddra_adverse_effects, adverse_effect_line) 
-
-    meddra_freq_parsed = open('sideeffects_files/meddra_freq_parsed.tsv', 'r')
-    for_every_line(meddra_freq_parsed, meddra_freq_parsed_line) 
+#    for_every_line('sideeffects_files/label_mapping.tsv', label_mapping_line) 
+    for_every_line('sideeffects_files/meddra_adverse_effects.tsv', adverse_effect_line) 
+    for_every_line('sideeffects_files/meddra_freq_parsed.tsv', meddra_freq_parsed_line) 
