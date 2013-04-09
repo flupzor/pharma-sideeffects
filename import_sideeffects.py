@@ -18,6 +18,7 @@ import sys
 
 from django.core.management import setup_environ
 from django import db
+from django.db import connection
 
 from drugs.models import *
 import settings
@@ -199,6 +200,12 @@ def atc_line(line):
 
 
 if __name__ == '__main__':
+
+    # XXX: Is there always one connecetion? And does it get closed?
+    cursor = connection.cursor()
+
+    cursor.execute("PRAGMA cache_size = 900000;");
+    cursor.execute("PRAGMA journal_mode = MEMORY;");
 
 # XXX: For now, we aren't using the label mappings
 #    for_every_line('sideeffects_files/label_mapping.tsv', label_mapping_line) 
