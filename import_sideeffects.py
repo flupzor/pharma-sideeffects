@@ -45,6 +45,9 @@ class ParseLine(object):
 
         return s
 
+class ChemicalSources(ParseLine):
+    column_names = ['flat_compound_id', 'stereo_compound_id', 'source', 'id']
+
 class LabelMappingLine(ParseLine):
     column_names = [ 'generic_name', 'brand_name', 'marker', 'compound_id1',
         'compound_id2', 'url', 'label_identifier']
@@ -179,6 +182,21 @@ def label_mapping_line(line):
 
     drug.save()
 
+def atc_line(line):
+    sources = ChemicalSources
+    sources.parse(line)
+
+    # We only care about ATC codes for now
+    if sources.source != 'ATC':
+        return;
+
+    try:
+        drug = Drug.objects.get(stereo_compound_id = sources.stereo_compound_id)
+    except Drug.DoesNotExist:
+        drug = Drug()
+
+    drug.atc_code = sources.id;
+
 
 if __name__ == '__main__':
 
@@ -186,3 +204,4 @@ if __name__ == '__main__':
 #    for_every_line('sideeffects_files/label_mapping.tsv', label_mapping_line) 
     for_every_line('sideeffects_files/meddra_adverse_effects.tsv', adverse_effect_line) 
     for_every_line('sideeffects_files/meddra_freq_parsed.tsv', meddra_freq_parsed_line) 
+    for_every_line('sideeffects_files/chemical.sources.v3.1.tsv', atc_line)
