@@ -37,7 +37,7 @@ class ParseLine(object):
         for i in range(len(split_line)):
             self.columns[self.column_names[i]] = split_line[i] 
 
-    def __unicode__():
+    def __str__(self):
         s = ''
 
         for name, value in self.columns.items():
