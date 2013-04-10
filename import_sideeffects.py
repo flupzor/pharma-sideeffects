@@ -184,7 +184,7 @@ def label_mapping_line(line):
     drug.save()
 
 def atc_line(line):
-    sources = ChemicalSources
+    sources = ChemicalSources()
     sources.parse(line)
 
     # We only care about ATC codes for now
