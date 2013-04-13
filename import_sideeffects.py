@@ -71,7 +71,7 @@ class MeddraAdverseEffectLine(ParseLine):
         'drug_name', 'side_effect_name', 'MedDRA_concept_type', \
         'UMLS_concept_id_for_MedDRA_term', 'MedDRA_side_effect_name' ]
 
-def for_every_line(filename, cb):
+def for_every_line(filename, cb, ctx):
 
     sys.stdout.write("Opening file: %s\n" %(filename, ))
 
@@ -120,7 +120,7 @@ def for_every_line(filename, cb):
             time_started = time.time()
             lines_per_sec = 0
 
-        cb(line)
+        cb(line, ctx)
 
         line_number += 1
         lines_per_sec += 1
@@ -128,68 +128,135 @@ def for_every_line(filename, cb):
         # Clear the list of SQL queries Django keeps.
         db.reset_queries()
 
-def adverse_effect_line(line):
+def adverse_effect_line(line, ctx):
     effect_line = MeddraAdverseEffectLine()
     effect_line.parse(line)
 
-    try:
-        side_effect = SideEffect.objects.get(name = effect_line.side_effect_name)
-    except SideEffect.DoesNotExist:
+    side_effects = ctx['side_effects']
+
+    if effect_line.side_effect_name in side_effects:
+        side_effect = side_effects[effect_line.side_effect_name]
+    else:
         side_effect = SideEffect()
+        # now, the objects gets an PK
+        side_effect.save()
+        side_effects[effect_line.side_effect_name] = side_effect
+
+# Not optimized version:
+#    try:
+#        side_effect = SideEffect.objects.get(name = effect_line.side_effect_name)
+#    except SideEffect.DoesNotExist:
+#        side_effect = SideEffect()
+
 
     side_effect.name = effect_line.side_effect_name
     side_effect.meddra_name = effect_line.MedDRA_side_effect_name 
 
-    side_effect.save()
+    if side_effect.is_dirty():
+        side_effect.save()
 
-    try:
-        drug = Drug.objects.get(name = effect_line.drug_name)
-    except Drug.DoesNotExist:
+    drugs = ctx['drugs']
+    if effect_line.drug_name in drugs:
+        drug = drugs[effect_line.drug_name]
+    else:
         drug = Drug()
+        # now, the objects gets an PK
+        drug.save()
+        drugs[effect_line.drug_name] = drug
+
+# Not optimized version:
+#    try:
+#        drug = Drug.objects.get(name = effect_line.drug_name)
+#    except Drug.DoesNotExist:
+#        drug = Drug()
 
     drug.name = effect_line.drug_name
     drug.flat_compound_id = effect_line.flat_compound_id
     drug.stereo_compound_id = effect_line.stereo_compound_id
 
-    drug.save()
+    if drug.is_dirty():
+        drug.save()
 
-    try:
-        side_effect_freq = SideEffectFrequency.objects.get(side_effect = side_effect, drug = drug)
-    except SideEffectFrequency.DoesNotExist:
+    freqs = ctx['freqs']
+
+    if (side_effect, drug) in freqs:
+        side_effect_freq = freqs[(side_effect, drug)]
+    else:
         side_effect_freq = SideEffectFrequency(side_effect = side_effect, drug = drug)
+        # now, the objects gets an PK
+        side_effect_freq.save()
+        freqs[(side_effect, drug)] = side_effect_freq
 
-    side_effect_freq.save()
+# Not optimized version:
+#    try:
+#        side_effect_freq = SideEffectFrequency.objects.get(side_effect = side_effect, drug = drug)
+#    except SideEffectFrequency.DoesNotExist:
+#        side_effect_freq = SideEffectFrequency(side_effect = side_effect, drug = drug)
+#    side_effect_freq.save()
 
-def meddra_freq_parsed_line(line):
+def meddra_freq_parsed_line(line, ctx):
     freq_line = MeddraFreqParsedLine()
     freq_line.parse(line)
 
-    try:
-        side_effect = SideEffect.objects.get(name = freq_line.concept_name)
-    except SideEffect.DoesNotExist:
+    side_effects = ctx['side_effects']
+
+    if freq_line.concept_name in side_effects:
+        side_effect = side_effects[freq_line.concept_name]
+    else:
         side_effect = SideEffect()
+        # now, the objects gets an PK
+        side_effect.save()
+        side_effects[freq_line.concept_name] = side_effect
 
-    side_effect.save()
+# Not optimized version:
+#    try:
+#        side_effect = SideEffect.objects.get(name = freq_line.concept_name)
+#    except SideEffect.DoesNotExist:
+#        side_effect = SideEffect()
+#    side_effect.save()
 
-    try:
-        drug = Drug.objects.get(stereo_compound_id = freq_line.stereo_compound_id)
-    except Drug.DoesNotExist:
+    drugs = ctx['drugs']
+    if freq_line.stereo_compound_id in drugs:
+        drug = drugs[freq_line.stereo_compound_id]
+    else:
         drug = Drug()
+        # now, the objects gets an PK
+        drug.save()
+        drugs[freq_line.stereo_compound_id] = drug
 
-    drug.save()
+# Not optimized version:
+#    try:
+#        drug = Drug.objects.get(stereo_compound_id = freq_line.stereo_compound_id)
+#    except Drug.DoesNotExist:
+#        drug = Drug()
+#
+#    drug.save()
 
-    try:
-        side_effect_freq = SideEffectFrequency.objects.get(side_effect = side_effect, drug = drug)
-    except SideEffectFrequency.DoesNotExist:
+    freqs = ctx['freqs']
+
+    if (side_effect, drug) in freqs:
+        side_effect_freq = freqs[(side_effect, drug)]
+    else:
         side_effect_freq = SideEffectFrequency(side_effect = side_effect, drug = drug)
+        # now, the objects gets an PK
+        side_effect_freq.save()
+        freqs[(side_effect, drug)] = side_effect_freq
+
+
+# Not optimized version:
+#    try:
+#        side_effect_freq = SideEffectFrequency.objects.get(side_effect = side_effect, drug = drug)
+#    except SideEffectFrequency.DoesNotExist:
+#        side_effect_freq = SideEffectFrequency(side_effect = side_effect, drug = drug)
 
     side_effect_freq.frequency_description = freq_line.frequency_description
     side_effect_freq.frequency_lower = freq_line.lower_bound_frequency
     side_effect_freq.frequency_upper = freq_line.upper_bound_frequency
 
-    side_effect_freq.save()
+    if side_effect_freq.is_dirty():
+        side_effect_freq.save()
 
-def label_mapping_line(line):
+def label_mapping_line(line, ctx):
     label_line = LabelMappingLine()
     label_line.parse(line)
 
@@ -200,7 +267,7 @@ def label_mapping_line(line):
 
     drug.save()
 
-def atc_line(line):
+def atc_line(line, ctx):
     try:
         sources = ChemicalSources()
         sources.parse(line)
@@ -219,6 +286,8 @@ def atc_line(line):
 
     drug.atc_code = sources.id;
 
+    if drug.is_dirty():
+        drug.save()
 
 if __name__ == '__main__':
 
@@ -229,7 +298,9 @@ if __name__ == '__main__':
     cursor.execute("PRAGMA journal_mode = MEMORY;");
 
 # XXX: For now, we aren't using the label mappings
-#    for_every_line('sideeffects_files/label_mapping.tsv', label_mapping_line) 
-    for_every_line('sideeffects_files/meddra_adverse_effects.tsv', adverse_effect_line) 
-    for_every_line('sideeffects_files/meddra_freq_parsed.tsv', meddra_freq_parsed_line) 
-    for_every_line('sideeffects_files/chemical.sources.v3.1.tsv', atc_line)
+#    for_every_line('sideeffects_files/label_mapping.tsv', label_mapping_line, {}) 
+    for_every_line('sideeffects_files/meddra_adverse_effects.tsv',
+        adverse_effect_line, {'side_effects': {}, 'drugs': {}, 'freqs': {}}) 
+    for_every_line('sideeffects_files/meddra_freq_parsed.tsv',
+        meddra_freq_parsed_line, {'side_effects': {}, 'drugs': {}, 'freqs': {}}) 
+    for_every_line('sideeffects_files/chemical.sources.v3.1.tsv', atc_line, {})
