@@ -109,7 +109,7 @@ def for_every_line(filename, cb, ctx):
         # Trim newlines and such
         line = line.rstrip();
 
-        # Print an progress line every second
+        # Print a progress line every second
         if time.time() - time_started >= 1:
             per_cent = round(float(line_number) / float(line_count) * 100.0, 2)
 
