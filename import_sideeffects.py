@@ -23,6 +23,8 @@ from django.db import connection
 from drugs.models import *
 import settings
 
+import time
+
 setup_environ(settings)
 
 class ParseLine(object):
@@ -86,6 +88,9 @@ def for_every_line(filename, cb):
     f.seek(0)
 
     line_number = 1
+    per_cent = 0
+    time_started = time.time()
+    lines_per_sec = 0
     while True:
         line = f.readline()
 
@@ -100,13 +105,21 @@ def for_every_line(filename, cb):
         # Trim newlines and such
         line = line.rstrip();
 
-        sys.stdout.write("Processing line: %d of %d %f%%\r" % (line_number, line_count,
-            float(line_number) / float(line_count) * 100.0))
-        sys.stdout.flush()
+        # Print an progress line every second
+        if time.time() - time_started >= 1:
+            per_cent = round(float(line_number) / float(line_count) * 100.0, 2)
+
+            sys.stdout.write("Processing line: %d of %d %f%% (%d lps)\r" % (line_number, \
+                line_count, per_cent, lines_per_sec))
+            sys.stdout.flush()
+
+            time_started = time.time()
+            lines_per_sec = 0
 
         cb(line)
 
         line_number += 1
+        lines_per_sec += 1
 
         # Clear the list of SQL queries Django keeps.
         db.reset_queries()
