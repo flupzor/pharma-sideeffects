@@ -35,7 +35,11 @@ class ParseLine(object):
         return self.columns[name]
         
     def parse(self, line):
+        # XXX: Ignore commented lines.
         split_line = line.split("\t")
+
+        if len(split_line) != len(self.column_names):
+            raise SyntaxError("Too little or too many columns found.");
 
         for i in range(len(split_line)):
             self.columns[self.column_names[i]] = split_line[i] 
@@ -197,8 +201,12 @@ def label_mapping_line(line):
     drug.save()
 
 def atc_line(line):
-    sources = ChemicalSources()
-    sources.parse(line)
+    try:
+        sources = ChemicalSources()
+        sources.parse(line)
+    except SyntaxError as e:
+        # The beginning of this file is 
+        return;
 
     # We only care about ATC codes for now
     if sources.source != 'ATC':
