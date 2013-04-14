@@ -156,13 +156,13 @@ def adverse_effect_line(line, ctx):
         side_effect.save()
 
     drugs = ctx['drugs']
-    if effect_line.drug_name in drugs:
-        drug = drugs[effect_line.drug_name]
+    if (effect_line.stereo_compound_id,effect_line.flat_compound_id) in drugs:
+        drug = drugs[(effect_line.stereo_compound_id,effect_line.flat_compound_id)]
     else:
         drug = Drug()
         # now, the objects gets an PK
         drug.save()
-        drugs[effect_line.drug_name] = drug
+        drugs[(effect_line.stereo_compound_id,effect_line.flat_compound_id)] = drug
 
 # Not optimized version:
 #    try:
@@ -216,13 +216,13 @@ def meddra_freq_parsed_line(line, ctx):
 #    side_effect.save()
 
     drugs = ctx['drugs']
-    if freq_line.stereo_compound_id in drugs:
-        drug = drugs[freq_line.stereo_compound_id]
+    if (freq_line.stereo_compound_id, freq_line.flat_compound_id) in drugs:
+        drug = drugs[(freq_line.stereo_compound_id, freq_line.flat_compound_id)]
     else:
         drug = Drug()
         # now, the objects gets an PK
         drug.save()
-        drugs[freq_line.stereo_compound_id] = drug
+        drugs[(freq_line.stereo_compound_id, freq_line.flat_compound_id)] = drug
 
 # Not optimized version:
 #    try:
@@ -280,7 +280,7 @@ def atc_line(line, ctx):
         return;
 
     try:
-        drug = Drug.objects.get(stereo_compound_id = sources.stereo_compound_id)
+        drug = Drug.objects.get(stereo_compound_id = sources.stereo_compound_id, flat_compound_id = sources.flat_compound_id)
     except Drug.DoesNotExist:
         drug = Drug()
 
@@ -299,8 +299,14 @@ if __name__ == '__main__':
 
 # XXX: For now, we aren't using the label mappings
 #    for_every_line('sideeffects_files/label_mapping.tsv', label_mapping_line, {}) 
+
+    caching_dict = {
+        'side_effects': {},
+        'drugs': {},
+        'freqs': {}
+    }
     for_every_line('sideeffects_files/meddra_adverse_effects.tsv',
-        adverse_effect_line, {'side_effects': {}, 'drugs': {}, 'freqs': {}}) 
+        adverse_effect_line, caching_dict) 
     for_every_line('sideeffects_files/meddra_freq_parsed.tsv',
-        meddra_freq_parsed_line, {'side_effects': {}, 'drugs': {}, 'freqs': {}}) 
+        meddra_freq_parsed_line, caching_dict) 
     for_every_line('sideeffects_files/chemical.sources.v3.1.tsv', atc_line, {})
