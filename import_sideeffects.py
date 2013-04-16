@@ -71,7 +71,7 @@ class MeddraAdverseEffectLine(ParseLine):
         'drug_name', 'side_effect_name', 'MedDRA_concept_type', \
         'UMLS_concept_id_for_MedDRA_term', 'MedDRA_side_effect_name' ]
 
-def for_every_line(filename, cb, ctx):
+def for_every_line(filename, cb):
 
     sys.stdout.write("Opening file: %s\n" %(filename, ))
 
@@ -120,7 +120,7 @@ def for_every_line(filename, cb, ctx):
             time_started = time.time()
             lines_per_sec = 0
 
-        cb(line, ctx)
+        cb(line)
 
         line_number += 1
         lines_per_sec += 1
@@ -128,26 +128,36 @@ def for_every_line(filename, cb, ctx):
         # Clear the list of SQL queries Django keeps.
         db.reset_queries()
 
-def adverse_effect_line(line, ctx):
+global_cache = { 'SideEffect': {}, 'Drug': {}, 'SideEffectFrequency': {}}
+
+if 0:
+    def cache_or_create(klass, **kwargs):
+        return klass.objects.get_or_create(**kwargs)
+else:
+    def cache_or_create(klass, **kwargs):
+        class_name = klass.__name__
+        cache = global_cache[class_name]
+        created = False
+
+        # Python can't hash a dictionary, instead use an ordered tuple of
+        # tuples, which can be hashed. The .items method gives an ordered list
+        # back, so we should be fine.
+        cache_key = tuple(kwargs.items())
+
+        if cache_key in cache:
+            cached_item = cache[cache_key]
+        else:
+            cached_item, created = klass.objects.get_or_create(**kwargs)
+        
+            cache[cache_key] = cached_item
+
+        return cached_item, created
+
+def adverse_effect_line(line):
     effect_line = MeddraAdverseEffectLine()
     effect_line.parse(line)
 
-    side_effects = ctx['side_effects']
-
-    if effect_line.side_effect_name in side_effects:
-        side_effect = side_effects[effect_line.side_effect_name]
-    else:
-        side_effect = SideEffect()
-        # now, the objects gets an PK
-        side_effect.save()
-        side_effects[effect_line.side_effect_name] = side_effect
-
-# Not optimized version:
-#    try:
-#        side_effect = SideEffect.objects.get(name = effect_line.side_effect_name)
-#    except SideEffect.DoesNotExist:
-#        side_effect = SideEffect()
-
+    side_effect, created = cache_or_create(SideEffect, umls_concept_id = effect_line.umls_concept_id)
 
     side_effect.name = effect_line.side_effect_name
     side_effect.meddra_name = effect_line.MedDRA_side_effect_name 
@@ -155,20 +165,9 @@ def adverse_effect_line(line, ctx):
     if side_effect.is_dirty():
         side_effect.save()
 
-    drugs = ctx['drugs']
-    if (effect_line.stereo_compound_id,effect_line.flat_compound_id) in drugs:
-        drug = drugs[(effect_line.stereo_compound_id,effect_line.flat_compound_id)]
-    else:
-        drug = Drug()
-        # now, the objects gets an PK
-        drug.save()
-        drugs[(effect_line.stereo_compound_id,effect_line.flat_compound_id)] = drug
-
-# Not optimized version:
-#    try:
-#        drug = Drug.objects.get(name = effect_line.drug_name)
-#    except Drug.DoesNotExist:
-#        drug = Drug()
+    drug, created = cache_or_create(Drug, stereo_compound_id =
+        effect_line.stereo_compound_id, flat_compound_id =
+        effect_line.flat_compound_id)
 
     drug.name = effect_line.drug_name
     drug.flat_compound_id = effect_line.flat_compound_id
@@ -177,77 +176,22 @@ def adverse_effect_line(line, ctx):
     if drug.is_dirty():
         drug.save()
 
-    freqs = ctx['freqs']
+    side_effect_freq, created = cache_or_create(SideEffectFrequency, side_effect =
+        side_effect, drug = drug)
 
-    if (side_effect, drug) in freqs:
-        side_effect_freq = freqs[(side_effect, drug)]
-    else:
-        side_effect_freq = SideEffectFrequency(side_effect = side_effect, drug = drug)
-        # now, the objects gets an PK
-        side_effect_freq.save()
-        freqs[(side_effect, drug)] = side_effect_freq
-
-# Not optimized version:
-#    try:
-#        side_effect_freq = SideEffectFrequency.objects.get(side_effect = side_effect, drug = drug)
-#    except SideEffectFrequency.DoesNotExist:
-#        side_effect_freq = SideEffectFrequency(side_effect = side_effect, drug = drug)
-#    side_effect_freq.save()
-
-def meddra_freq_parsed_line(line, ctx):
+def meddra_freq_parsed_line(line):
     freq_line = MeddraFreqParsedLine()
     freq_line.parse(line)
 
-    side_effects = ctx['side_effects']
+    side_effect, created = cache_or_create(SideEffect, umls_concept_id =
+        freq_line.umls_concept_id)
 
-    if freq_line.concept_name in side_effects:
-        side_effect = side_effects[freq_line.concept_name]
-    else:
-        side_effect = SideEffect()
-        # now, the objects gets an PK
-        side_effect.save()
-        side_effects[freq_line.concept_name] = side_effect
+    drug, created = cache_or_create(Drug, stereo_compound_id =
+        freq_line.stereo_compound_id, flat_compound_id =
+        freq_line.flat_compound_id)
 
-# Not optimized version:
-#    try:
-#        side_effect = SideEffect.objects.get(name = freq_line.concept_name)
-#    except SideEffect.DoesNotExist:
-#        side_effect = SideEffect()
-#    side_effect.save()
-
-    drugs = ctx['drugs']
-    if (freq_line.stereo_compound_id, freq_line.flat_compound_id) in drugs:
-        drug = drugs[(freq_line.stereo_compound_id, freq_line.flat_compound_id)]
-    else:
-        drug = Drug()
-        # now, the objects gets an PK
-        drug.save()
-        drugs[(freq_line.stereo_compound_id, freq_line.flat_compound_id)] = drug
-
-# Not optimized version:
-#    try:
-#        drug = Drug.objects.get(stereo_compound_id = freq_line.stereo_compound_id)
-#    except Drug.DoesNotExist:
-#        drug = Drug()
-#
-#    drug.save()
-
-    freqs = ctx['freqs']
-
-    if (side_effect, drug) in freqs:
-        side_effect_freq = freqs[(side_effect, drug)]
-    else:
-        side_effect_freq = SideEffectFrequency(side_effect = side_effect, drug = drug)
-        # now, the objects gets an PK
-        side_effect_freq.save()
-        freqs[(side_effect, drug)] = side_effect_freq
-
-
-# Not optimized version:
-#    try:
-#        side_effect_freq = SideEffectFrequency.objects.get(side_effect = side_effect, drug = drug)
-#    except SideEffectFrequency.DoesNotExist:
-#        side_effect_freq = SideEffectFrequency(side_effect = side_effect, drug = drug)
+    side_effect_freq, created = cache_or_create(SideEffectFrequency, side_effect =
+        side_effect, drug = drug)
 
     side_effect_freq.frequency_description = freq_line.frequency_description
     side_effect_freq.frequency_lower = freq_line.lower_bound_frequency
@@ -256,7 +200,7 @@ def meddra_freq_parsed_line(line, ctx):
     if side_effect_freq.is_dirty():
         side_effect_freq.save()
 
-def label_mapping_line(line, ctx):
+def label_mapping_line(line):
     label_line = LabelMappingLine()
     label_line.parse(line)
 
@@ -267,7 +211,7 @@ def label_mapping_line(line, ctx):
 
     drug.save()
 
-def atc_line(line, ctx):
+def atc_line(line):
     try:
         sources = ChemicalSources()
         sources.parse(line)
@@ -279,10 +223,9 @@ def atc_line(line, ctx):
     if sources.source != 'ATC':
         return;
 
-    try:
-        drug = Drug.objects.get(stereo_compound_id = sources.stereo_compound_id, flat_compound_id = sources.flat_compound_id)
-    except Drug.DoesNotExist:
-        drug = Drug()
+    drug, created = cache_or_create(Drug, stereo_compound_id =
+        sources.stereo_compound_id, flat_compound_id =
+        sources.flat_compound_id)
 
     drug.atc_code = sources.id;
 
@@ -300,13 +243,8 @@ if __name__ == '__main__':
 # XXX: For now, we aren't using the label mappings
 #    for_every_line('sideeffects_files/label_mapping.tsv', label_mapping_line, {}) 
 
-    caching_dict = {
-        'side_effects': {},
-        'drugs': {},
-        'freqs': {}
-    }
     for_every_line('sideeffects_files/meddra_adverse_effects.tsv',
-        adverse_effect_line, caching_dict) 
+        adverse_effect_line) 
     for_every_line('sideeffects_files/meddra_freq_parsed.tsv',
-        meddra_freq_parsed_line, caching_dict) 
-    for_every_line('sideeffects_files/chemical.sources.v3.1.tsv', atc_line, {})
+        meddra_freq_parsed_line) 
+    for_every_line('sideeffects_files/chemical.sources.v3.1.tsv', atc_line)
