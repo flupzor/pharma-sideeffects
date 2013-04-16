@@ -48,6 +48,9 @@ class Drug(DirtyFieldsMixin, models.Model):
 #    generic_name = models.CharField(max_length=64, verbose_name='name')
 #    brand_name = models.CharField(max_length=64, verbose_name='name')
 
+    class Meta:
+        unique_together = ('flat_compound_id', 'stereo_compound_id')
+
 class SideEffectFrequency(DirtyFieldsMixin, models.Model):
     drug = models.ForeignKey(Drug, blank=True, null=True)
     side_effect = models.ForeignKey(SideEffect, blank=True, null=True)
