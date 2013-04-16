@@ -32,6 +32,7 @@ def reset_state(sender, instance, **kwargs):
 class SideEffect(DirtyFieldsMixin, models.Model):
     name = models.CharField(max_length=64, verbose_name='name', db_index=True)
     meddra_name = models.CharField(max_length=64, verbose_name='name')
+    umls_concept_id = models.CharField(max_length=64, verbose_name='name', db_index=True, unique=True)
 
 class Drug(DirtyFieldsMixin, models.Model):
     name = models.CharField(max_length=64, verbose_name='name', db_index=True)
