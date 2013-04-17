@@ -208,6 +208,8 @@ def meddra_freq_parsed_line(line):
         drug.name = "Unknown drug %d" % (unknown_drug_number, )
         drug.missing_info = True
 
+        drug.save()
+
     side_effect_freq, created = cache_or_create(SideEffectFrequency, side_effect =
         side_effect, drug = drug)
 
