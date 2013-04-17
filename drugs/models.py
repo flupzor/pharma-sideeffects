@@ -60,8 +60,6 @@ class Drug(DirtyFieldsMixin, models.Model):
         'SideEffectFrequency', blank=True, null=True,
         verbose_name='side effects')
 
-#    generic_name = models.CharField(max_length=64, verbose_name='name')
-#    brand_name = models.CharField(max_length=64, verbose_name='name')
     missing_info = models.BooleanField(default=False)
 
     class Meta:
