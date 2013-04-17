@@ -48,6 +48,9 @@ class SideEffect(DirtyFieldsMixin, models.Model):
     meddra_name = models.CharField(max_length=64, verbose_name='name')
     umls_concept_id = models.CharField(max_length=64, verbose_name='name', db_index=True, unique=True)
 
+    def __unicode__(self):
+        return self.name
+
 class Drug(DirtyFieldsMixin, models.Model):
     name = models.CharField(max_length=64, verbose_name='name', db_index=True)
 
@@ -64,6 +67,9 @@ class Drug(DirtyFieldsMixin, models.Model):
 
     class Meta:
         unique_together = ('flat_compound_id', 'stereo_compound_id')
+
+    def __unicode__(self):
+        return self.name
 
 class SideEffectFrequency(DirtyFieldsMixin, models.Model):
     drug = models.ForeignKey(Drug, blank=True, null=True)
