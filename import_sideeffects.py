@@ -147,8 +147,10 @@ else:
         if cache_key in cache:
             cached_item = cache[cache_key]
         else:
-            cached_item, created = klass.objects.get_or_create(**kwargs)
-        
+            created = True
+            cached_item = klass(**kwargs)
+            cached_item.save()
+
             cache[cache_key] = cached_item
 
         return cached_item, created
