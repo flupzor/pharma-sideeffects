@@ -62,6 +62,7 @@ class Drug(DirtyFieldsMixin, models.Model):
 
 #    generic_name = models.CharField(max_length=64, verbose_name='name')
 #    brand_name = models.CharField(max_length=64, verbose_name='name')
+    missing_info = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('flat_compound_id', 'stereo_compound_id')

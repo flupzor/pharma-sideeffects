@@ -181,16 +181,32 @@ def adverse_effect_line(line):
     side_effect_freq, created = cache_or_create(SideEffectFrequency, side_effect =
         side_effect, drug = drug)
 
+unknown_drug_number = 0
 def meddra_freq_parsed_line(line):
+    global unknown_drug_number
+
     freq_line = MeddraFreqParsedLine()
     freq_line.parse(line)
 
     side_effect, created = cache_or_create(SideEffect, umls_concept_id =
         freq_line.umls_concept_id)
 
+    # This is a side effect which didn't exist in the MeddraAdverseEffect file.
+    if created:
+        side_effect.name = freq_line.concept_name
+
+        side_effect.save()
+
     drug, created = cache_or_create(Drug, stereo_compound_id =
         freq_line.stereo_compound_id, flat_compound_id =
         freq_line.flat_compound_id)
+
+    # This is a drug which didn't exist in the MeddraAdverseEffect file. We
+    # don't know the name, so we'll call it unknown drug.
+    if created:
+        unknown_drug_number += 1
+        drug.name = "Unknown drug %d" % (unknown_drug_number, )
+        drug.missing_info = True
 
     side_effect_freq, created = cache_or_create(SideEffectFrequency, side_effect =
         side_effect, drug = drug)
